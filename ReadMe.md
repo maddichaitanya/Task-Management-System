@@ -25,3 +25,15 @@ Create the project:-
                 cmd:- 
                         npm install express mongoose cors dotenv bcryptjs jsonwebtoken
                         npm install -D nodemon
+
+        express() :- Create Express Application 
+        corse() :- Allows Frount-BackENd communication
+        express.json() :- read JSON request data
+        app.get()  :- creates a GET API
+        app.listen() :- Start the Backend Server 
+
+
+        3. MongoDB connection using Mongoose:-
+                Mongoose is a library that helps Node.js communicate with MongoDB. It also allows us to define schemas and models for our database.
+
+        
