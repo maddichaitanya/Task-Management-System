@@ -1,0 +1,27 @@
+#   Task Management Application 
+
+Create the project:-
+        1. make sure you have these installed:
+                a. Node.js and npm
+                b. VS Code
+                c. MongoDB Compass
+                d. MongoDB local server or a MongoDB Atlas account
+        Open VS Code terminal.
+
+    1.  Create the React frontend
+            cmd:- npm create vite@latest client -- --template react
+
+            cmd:-  npm install axios react-router-dom lucide-react
+            // Install Tailwind CSS
+            cmd:-  npm install tailwindcss @tailwindcss/vite
+
+            step 1:- 
+                        import tailwindcss in vite.config.js and index.css
+
+    2.  create the backend 
+
+                cmd :- npm init -y
+                
+                cmd:- 
+                        npm install express mongoose cors dotenv bcryptjs jsonwebtoken
+                        npm install -D nodemon
