@@ -36,4 +36,17 @@ Create the project:-
         3. MongoDB connection using Mongoose:-
                 Mongoose is a library that helps Node.js communicate with MongoDB. It also allows us to define schemas and models for our database.
 
+                database_name:-  taskflow
         
+
+
+Step by step process of my project 
+
+        1. Project setup                        done
+        2. MongoDB connection                   done
+        3. User and Task models                 processing    
+        4. Registration API
+        5. Login API with JWT
+        6. Authentication middleware
+        7. Task CURD APTs  
+        8. React frontend integration         
