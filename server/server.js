@@ -1,8 +1,9 @@
 const express = require("express");
 const cors =require("cors");
-const connectDB = require("./config/db");
-
 require("dotenv").config();
+
+const connectDB = require("./config/db");
+const authRoutes=require("./routes/authRoutes");
 
 const app=express();
 
@@ -10,11 +11,17 @@ const app=express();
 app.use(cors());
 app.use(express.json());
 
+//Routes
+app.use("/api/auth",authRoutes);
+
+
 //test API
 
 app.get("/",(req,res) =>{
     res.send("Task-Management System API is Running Sucessfully!");
 });
+
+
 
 // Start server after database connection
 const PORT=process.env.PORT || 5000;

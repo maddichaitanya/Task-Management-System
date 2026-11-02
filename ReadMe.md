@@ -44,9 +44,9 @@ Step by step process of my project
 
         1. Project setup                        done
         2. MongoDB connection                   done
-        3. User and Task models                 processing    
-        4. Registration API
-        5. Login API with JWT
+        3. User and Task models                 done    
+        4. Registration API                     done
+        5. Login API with JWT                   Processing
         6. Authentication middleware
         7. Task CURD APTs  
         8. React frontend integration         
