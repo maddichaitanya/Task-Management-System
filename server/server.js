@@ -5,6 +5,7 @@ require("dotenv").config();
 const connectDB = require("./config/db");
 const authRoutes=require("./routes/authRoutes");
 const authMiddleware = require("./middleware/authMiddleware");
+const taskRoutes = require("./routes/taskRoutes");
 
 const app=express();
 
@@ -15,10 +16,9 @@ app.use(express.urlencoded({extended:true}));
 
 //Routes
 app.use("/api/auth",authRoutes);
-
+app.use("/api/tasks", taskRoutes);
 
 //test API
-
 app.get("/",(req,res) =>{
     res.send("Task-Management System API is Running Sucessfully!");
 });
