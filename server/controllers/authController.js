@@ -68,7 +68,7 @@ const loginUser=async (req,res) =>{
     try{
         //Get Email and Password
 
-        const {email,password}=req.body;
+        const { email, password } = req.body || {};
 
         //validate Fileds
 

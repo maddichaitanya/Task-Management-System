@@ -4,6 +4,7 @@ require("dotenv").config();
 
 const connectDB = require("./config/db");
 const authRoutes=require("./routes/authRoutes");
+const authMiddleware = require("./middleware/authMiddleware");
 
 const app=express();
 
@@ -22,7 +23,13 @@ app.get("/",(req,res) =>{
     res.send("Task-Management System API is Running Sucessfully!");
 });
 
-
+// Protected test API
+app.get("/api/protected", authMiddleware, (req, res) => {
+    res.status(200).json({
+        message: "Access granted! You are authenticated.",
+        userId: req.user
+    });
+});
 
 // Start server after database connection
 const PORT=process.env.PORT || 5000;
