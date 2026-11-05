@@ -12,12 +12,16 @@ import {
     CalendarDays,
     Menu,
     X,
-    Plus
+    Plus,
+    Pencil,
+    Trash2
 } from "lucide-react";
 
 import {
     getTasks,
-    createTask
+    createTask,
+    updateTask,
+    deleteTask
 } from "../services/taskService";
 
 import { logoutUser } from "../services/authService";
@@ -43,10 +47,11 @@ const Dashboard = () => {
         }
     });
 
-    // Add task modal states
+    // Task modal states
     const [showTaskForm, setShowTaskForm] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [formError, setFormError] = useState("");
+    const [editingTaskId, setEditingTaskId] = useState(null);
 
     // Task form data
     const [formData, setFormData] = useState({
@@ -57,7 +62,7 @@ const Dashboard = () => {
         dueDate: ""
     });
 
-    // Fetch tasks from MongoDB
+    // Fetch tasks from backend
     const fetchTasks = async () => {
         try {
             setError("");
@@ -65,7 +70,6 @@ const Dashboard = () => {
             const response = await getTasks();
 
             setTasks(response.tasks || []);
-
         } catch (err) {
             setError(
                 err.response?.data?.message ||
@@ -76,14 +80,37 @@ const Dashboard = () => {
         }
     };
 
+    // Fetch tasks when dashboard loads
     useEffect(() => {
         fetchTasks();
     }, []);
 
-    // Logout
-    const handleLogout = () => {
-        logoutUser();
-        navigate("/login");
+    // Reset task form
+    const resetTaskForm = () => {
+        setFormData({
+            title: "",
+            description: "",
+            priority: "Medium",
+            status: "Todo",
+            dueDate: ""
+        });
+
+        setEditingTaskId(null);
+        setFormError("");
+    };
+
+    // Open create task modal
+    const handleOpenCreateForm = () => {
+        resetTaskForm();
+        setShowTaskForm(true);
+    };
+
+    // Close task modal
+    const handleCloseTaskForm = () => {
+        if (submitting) return;
+
+        setShowTaskForm(false);
+        resetTaskForm();
     };
 
     // Handle input changes
@@ -96,7 +123,7 @@ const Dashboard = () => {
         }));
     };
 
-    // Create new task
+    // Create or update task
     const handleCreateTask = async (e) => {
         e.preventDefault();
 
@@ -116,39 +143,93 @@ const Dashboard = () => {
                 description: formData.description.trim()
             };
 
-            // Remove empty due date
             if (!taskData.dueDate) {
                 delete taskData.dueDate;
             }
 
-            // Save task in MongoDB
-            await createTask(taskData);
+            if (editingTaskId) {
+                await updateTask(editingTaskId, taskData);
+            } else {
+                await createTask(taskData);
+            }
 
-            // Refresh task list
             await fetchTasks();
 
-            // Reset form
-            setFormData({
-                title: "",
-                description: "",
-                priority: "Medium",
-                status: "Todo",
-                dueDate: ""
-            });
-
             setShowTaskForm(false);
+            resetTaskForm();
 
         } catch (err) {
             setFormError(
                 err.response?.data?.message ||
-                "Unable to create task."
+                "Unable to save task."
             );
         } finally {
             setSubmitting(false);
         }
     };
 
-    // Task statistics
+    // Edit task
+    const handleEditTask = (task) => {
+        setEditingTaskId(task._id);
+
+        setFormData({
+            title: task.title || "",
+            description: task.description || "",
+            priority: task.priority || "Medium",
+            status: task.status || "Todo",
+            dueDate: task.dueDate
+                ? new Date(task.dueDate).toISOString().split("T")[0]
+                : ""
+        });
+
+        setFormError("");
+        setShowTaskForm(true);
+    };
+
+    // Delete task
+    const handleDeleteTask = async (taskId) => {
+        const confirmDelete = window.confirm(
+            "Are you sure you want to delete this task?"
+        );
+
+        if (!confirmDelete) return;
+
+        try {
+            await deleteTask(taskId);
+            await fetchTasks();
+        } catch (err) {
+            setError(
+                err.response?.data?.message ||
+                "Unable to delete task."
+            );
+        }
+    };
+
+    // Mark task as completed
+    const handleCompleteTask = async (task) => {
+        if (task.status === "Completed") return;
+
+        try {
+            await updateTask(task._id, {
+                status: "Completed"
+            });
+
+            await fetchTasks();
+        } catch (err) {
+            setError(
+                err.response?.data?.message ||
+                "Unable to complete task."
+            );
+        }
+    };
+
+    // Logout
+    const handleLogout = () => {
+        logoutUser();
+        navigate("/login");
+    };
+
+    // Dashboard statistics
     const completedTasks = tasks.filter(
         (task) => task.status === "Completed"
     ).length;
@@ -191,7 +272,6 @@ const Dashboard = () => {
                     sidebarOpen ? "sidebar-open" : ""
                 }`}
             >
-
                 <div className="sidebar-brand">
 
                     <div className="brand-logo">
@@ -205,6 +285,7 @@ const Dashboard = () => {
                     <button
                         className="mobile-close"
                         onClick={() => setSidebarOpen(false)}
+                        type="button"
                     >
                         <X size={20} />
                     </button>
@@ -217,20 +298,26 @@ const Dashboard = () => {
 
                 <nav className="sidebar-nav">
 
-                    <button className="nav-item active">
+                    <button
+                        className="nav-item active"
+                        type="button"
+                    >
                         <LayoutDashboard size={19} />
                         Dashboard
                     </button>
 
                     <button
                         className="nav-item"
-                        onClick={() =>
+                        type="button"
+                        onClick={() => {
                             document
                                 .getElementById("tasks-section")
                                 ?.scrollIntoView({
                                     behavior: "smooth"
-                                })
-                        }
+                                });
+
+                            setSidebarOpen(false);
+                        }}
                     >
                         <ListTodo size={19} />
                         My Tasks
@@ -265,7 +352,7 @@ const Dashboard = () => {
             {/* Main content */}
             <main className="tf-main">
 
-                {/* Top Navigation */}
+                {/* Top navigation */}
                 <header className="tf-topbar">
 
                     <div className="topbar-left">
@@ -273,6 +360,7 @@ const Dashboard = () => {
                         <button
                             className="mobile-menu"
                             onClick={() => setSidebarOpen(true)}
+                            type="button"
                         >
                             <Menu size={22} />
                         </button>
@@ -290,6 +378,7 @@ const Dashboard = () => {
                         <button
                             className="topbar-logout"
                             onClick={handleLogout}
+                            type="button"
                         >
                             <LogOut size={17} />
                             Logout
@@ -311,7 +400,7 @@ const Dashboard = () => {
 
                 <div className="dashboard-content">
 
-                    {/* Welcome Section */}
+                    {/* Welcome section */}
                     <section className="dashboard-welcome">
 
                         <div>
@@ -414,7 +503,7 @@ const Dashboard = () => {
 
                     </section>
 
-                    {/* Tasks Section */}
+                    {/* Tasks section */}
                     <section
                         className="tasks-section"
                         id="tasks-section"
@@ -455,13 +544,11 @@ const Dashboard = () => {
 
                                 </div>
 
-                                {/* Add Task Button */}
+                                {/* Add task button */}
                                 <button
                                     className="add-task-button"
-                                    onClick={() => {
-                                        setFormError("");
-                                        setShowTaskForm(true);
-                                    }}
+                                    onClick={handleOpenCreateForm}
+                                    type="button"
                                 >
                                     <Plus size={18} />
                                     Add Task
@@ -538,23 +625,29 @@ const Dashboard = () => {
                                                     "No description provided"}
                                             </p>
 
+                                            {/* Task priority and status */}
                                             <div className="task-meta">
 
                                                 <span
-                                                    className={`priority-badge ${getPriorityClass(
-                                                        task.priority
-                                                    )}`}
+                                                    className={`task-priority ${getPriorityClass(task.priority)}`}
                                                 >
-                                                    {task.priority} Priority
+                                                    {task.priority || "Medium"} Priority
                                                 </span>
 
                                                 <span
-                                                    className={`status-badge ${getStatusClass(
-                                                        task.status
-                                                    )}`}
+                                                    className={`task-status ${getStatusClass(task.status)}`}
                                                 >
-                                                    {task.status}
+                                                    {task.status || "Todo"}
                                                 </span>
+
+                                                {task.dueDate && (
+                                                    <span className="task-due-date">
+                                                        <CalendarDays size={13} />
+                                                        {new Date(
+                                                            task.dueDate
+                                                        ).toLocaleDateString()}
+                                                    </span>
+                                                )}
 
                                             </div>
 
@@ -562,8 +655,56 @@ const Dashboard = () => {
 
                                     </div>
 
-                                    <div className="task-card-icon">
-                                        <CheckCircle2 size={21} />
+                                    {/* Task action buttons */}
+                                    <div className="task-card-actions">
+
+                                        {/* Edit button */}
+                                        <button
+                                            type="button"
+                                            className="task-action-btn edit-btn"
+                                            title="Edit Task"
+                                            onClick={() =>
+                                                handleEditTask(task)
+                                            }
+                                        >
+                                            <Pencil size={17} />
+                                        </button>
+
+                                        {/* Delete button */}
+                                        <button
+                                            type="button"
+                                            className="task-action-btn delete-btn"
+                                            title="Delete Task"
+                                            onClick={() =>
+                                                handleDeleteTask(task._id)
+                                            }
+                                        >
+                                            <Trash2 size={17} />
+                                        </button>
+
+                                        {/* Complete button */}
+                                        <button
+                                            type="button"
+                                            className={`task-card-icon ${
+                                                task.status === "Completed"
+                                                    ? "task-completed"
+                                                    : ""
+                                            }`}
+                                            title={
+                                                task.status === "Completed"
+                                                    ? "Task already completed"
+                                                    : "Mark as completed"
+                                            }
+                                            onClick={() =>
+                                                handleCompleteTask(task)
+                                            }
+                                            disabled={
+                                                task.status === "Completed"
+                                            }
+                                        >
+                                            <CheckCircle2 size={21} />
+                                        </button>
+
                                     </div>
 
                                 </article>
@@ -574,14 +715,14 @@ const Dashboard = () => {
 
                     </section>
 
-                    {/* Add Task Modal */}
+                    {/* Create / Edit task modal */}
                     {showTaskForm && (
 
                         <div
                             className="task-modal-overlay"
                             onMouseDown={(e) => {
                                 if (e.target === e.currentTarget) {
-                                    setShowTaskForm(false);
+                                    handleCloseTaskForm();
                                 }
                             }}
                         >
@@ -597,10 +738,16 @@ const Dashboard = () => {
                                             TASK MANAGEMENT
                                         </span>
 
-                                        <h2>Create New Task</h2>
+                                        <h2>
+                                            {editingTaskId
+                                                ? "Edit Task"
+                                                : "Create New Task"}
+                                        </h2>
 
                                         <p>
-                                            Add a new task to your workspace.
+                                            {editingTaskId
+                                                ? "Update your task details."
+                                                : "Add a new task to your workspace."}
                                         </p>
 
                                     </div>
@@ -608,7 +755,8 @@ const Dashboard = () => {
                                     <button
                                         className="modal-close"
                                         type="button"
-                                        onClick={() => setShowTaskForm(false)}
+                                        onClick={handleCloseTaskForm}
+                                        disabled={submitting}
                                     >
                                         <X size={21} />
                                     </button>
@@ -652,7 +800,7 @@ const Dashboard = () => {
 
                                     </div>
 
-                                    {/* Priority and Status */}
+                                    {/* Priority and status */}
                                     <div className="form-row">
 
                                         <div className="form-group">
@@ -714,13 +862,13 @@ const Dashboard = () => {
                                         </p>
                                     )}
 
-                                    {/* Buttons */}
+                                    {/* Form buttons */}
                                     <div className="task-form-actions">
 
                                         <button
                                             type="button"
                                             className="cancel-task-button"
-                                            onClick={() => setShowTaskForm(false)}
+                                            onClick={handleCloseTaskForm}
                                             disabled={submitting}
                                         >
                                             Cancel
@@ -731,10 +879,11 @@ const Dashboard = () => {
                                             className="add-task-button"
                                             disabled={submitting}
                                         >
-                                            <Plus size={17} />
                                             {submitting
-                                                ? "Creating..."
-                                                : "Create Task"}
+                                                ? "Saving..."
+                                                : editingTaskId
+                                                    ? "Update Task"
+                                                    : "Create Task"}
                                         </button>
 
                                     </div>
